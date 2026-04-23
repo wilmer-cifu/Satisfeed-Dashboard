@@ -113,7 +113,7 @@ fa_df = fa_df[fa_keep].drop_duplicates(subset=["county_key"])
 df = school_df.merge(fa_df, on="county_key", how="left")
 
 # -------------------------------------------------
-# FINAL SAFETY CLEANUP FOR DEPLOYMENT
+# Final safety cleanup for deployment
 # -------------------------------------------------
 df["LAT"] = pd.to_numeric(df["LAT"], errors="coerce")
 df["LON"] = pd.to_numeric(df["LON"], errors="coerce")
@@ -123,7 +123,11 @@ df = df.dropna(subset=["LAT", "LON"]).copy()
 # Sidebar
 # -------------------------------------------------
 st.sidebar.title("Directory")
-page = st.sidebar.radio("", ["Home", "Analysis", "Map"])
+page = st.sidebar.radio(
+    "Navigation",
+    ["Home", "Analysis", "Map"],
+    label_visibility="collapsed"
+)
 
 # -------------------------------------------------
 # Home
@@ -218,16 +222,15 @@ elif page == "Map":
             zoomToBoundsOnClick=True
         ).add_to(m)
 
-        for row in df.itertuples(index=False):
-            lat = getattr(row, "LAT", None)
-            lon = getattr(row, "LON", None)
+        for _, row in df.iterrows():
+            lat = row.get("LAT")
+            lon = row.get("LON")
 
-            # Deployment-safe map fix
             if pd.isna(lat) or pd.isna(lon):
                 continue
 
-            school_name = getattr(row, "SCHOOLNAME", "School")
-            insecurity_rate = getattr(row, "Child Food Insecurity Rate", None)
+            school_name = row.get("SCHOOLNAME", "School")
+            insecurity_rate = row.get("Child Food Insecurity Rate", None)
 
             tooltip_text = school_name
             if pd.notna(insecurity_rate):
