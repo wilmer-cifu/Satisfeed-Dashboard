@@ -6,13 +6,10 @@ from streamlit_folium import st_folium
 
 st.set_page_config(
     page_title="Satisfeed Dashboard",
-    page_icon="📊",
     layout="wide"
 )
 
-# -------------------------------------------------
 # Helpers
-# -------------------------------------------------
 def safe_image(path: str, width: int = 950):
     try:
         st.image(path, width=width)
@@ -67,9 +64,7 @@ def insecurity_fill(rate):
 def section_card(title: str):
     st.markdown(f"### {title}")
 
-# -------------------------------------------------
-# Load school data
-# -------------------------------------------------
+# School data
 school_df = pd.read_csv("dashboard_data_geocoded.csv")
 
 school_df["LAT"] = pd.to_numeric(school_df["LAT"], errors="coerce")
@@ -85,9 +80,7 @@ school_df["FULL_ADDRESS"] = (
 
 school_df["county_key"] = school_df["SYSTEMNAME"].apply(normalize_county_name)
 
-# -------------------------------------------------
-# Load Feeding America data
-# -------------------------------------------------
+# Feeding America data
 fa_df = pd.read_excel("Feeding_America_Cleaned.xlsx")
 
 fa_df["county_key"] = (
@@ -109,45 +102,60 @@ fa_keep = [
 ]
 
 fa_df = fa_df[fa_keep].drop_duplicates(subset=["county_key"])
-
 df = school_df.merge(fa_df, on="county_key", how="left")
 
-# -------------------------------------------------
-# Final safety cleanup for deployment
-# -------------------------------------------------
+# Deployment
 df["LAT"] = pd.to_numeric(df["LAT"], errors="coerce")
 df["LON"] = pd.to_numeric(df["LON"], errors="coerce")
 df = df.dropna(subset=["LAT", "LON"]).copy()
 
-# -------------------------------------------------
-# Sidebar
-# -------------------------------------------------
+# Directory
 st.sidebar.title("Directory")
 page = st.sidebar.radio(
     "Navigation",
-    ["Home", "Analysis", "Map"],
+    ["Home", "Analysis", "Map", "Data Overview"],
     label_visibility="collapsed"
 )
 
-# -------------------------------------------------
-# Home
-# -------------------------------------------------
+# Home Page
 if page == "Home":
-    st.title("Satisfeed Dashboard")
-    st.markdown("**By: Wilmer Cifuentes, Ethan Boderas, Jaylan Igbinoba**")
 
-    st.markdown(
-        """
-        ### Introduction
-        This project focuses on building and maintaining a data-driven dashboard for Satisfeed, a food bank that serves up to 56,000 families. The primary goal is to update the dashboard with new and relevant data and analyze data to generate meaningful statistics that support planning, reporting, and decision-making.
+    spacer_left, header_col, spacer_right = st.columns([0.3, 8, 0.3])
 
-        We will use Jupyter Notebook and Python to enable reliable data management, insightful analytics, and clear visualization of the food bank’s reach and effectiveness.
-        """
-    )
+    with header_col:
+        st.markdown(
+            "<h1 style='text-align:center; margin-bottom: 0;'>Satisfeed Dashboard</h1>",
+            unsafe_allow_html=True
+        )
 
-# -------------------------------------------------
-# Analysis
-# -------------------------------------------------
+        st.markdown(
+            "<p style='text-align:center; font-weight:600;'>By: Wilmer Cifuentes, Ethan Boderas, Jaylan Igbinoba</p>",
+            unsafe_allow_html=True
+        )
+
+        st.markdown(
+            "<p style='text-align:center; font-weight:500;'>Client: Tim Turner | "
+            "<a href='https://www.satisfeed.org/' target='_blank'>https://www.satisfeed.org/</a></p>",
+            unsafe_allow_html=True
+        )
+
+        st.markdown(
+            """
+            ### Introduction
+            This project focuses on building and maintaining a data-driven dashboard for Satisfeed, a food bank that serves up to 56,000 families. The primary goal is to update the dashboard with new and relevant data and analyze data to generate meaningful statistics that support planning, reporting, and decision-making.
+
+            We will use Jupyter Notebook and Python to enable reliable data management, insightful analytics, and clear visualization of the food bank’s reach and effectiveness.
+            """
+        )
+
+        st.markdown("###")
+
+        img_left, img_center, img_right = st.columns([1, 2.2, 1])
+
+        with img_center:
+            st.image("Satisfeed1.png", width=700)
+
+# Analysis Section
 elif page == "Analysis":
     st.title("Analysis")
 
@@ -199,9 +207,7 @@ elif page == "Analysis":
         """
     )
 
-# -------------------------------------------------
 # Map
-# -------------------------------------------------
 elif page == "Map":
     st.title("Georgia Schools Map")
 
@@ -314,8 +320,8 @@ elif page == "Map":
 
             st.markdown("---")
             section_card("Academic Performance")
-            st.markdown(f"**Content Mastery ELA:** {fmt_pct(school.get('CONTENT_MASTERYE', None))}")
-            st.markdown(f"**Content Mastery Math:** {fmt_pct(school.get('CONTENT_MASTERYM', None))}")
+            st.markdown(f"**Content Mastery Elementary:** {fmt_pct(school.get('CONTENT_MASTERYE', None))}")
+            st.markdown(f"**Content Mastery Middle School:** {fmt_pct(school.get('CONTENT_MASTERYM', None))}")
             st.markdown(f"**Content Mastery High School:** {fmt_pct(school.get('CONTENT_MASTERYH', None))}")
             st.markdown(f"**% Free & Reduced Lunch:** {fmt_pct(school.get('Percentage of Free & Reduced', None))}")
             st.markdown(f"**SAT Reading and Writing:** {school.get('SAT Reading and Writing', 'N/A')}")
@@ -352,3 +358,54 @@ elif page == "Map":
         else:
             st.write("Click on an individual school node to see details.")
             st.write("If schools are clustered together, click the cluster to zoom in.")
+
+# Data Overview
+elif page == "Data Overview":
+    st.title("Datasets")
+
+    st.markdown("### Feeding America")
+    st.markdown("[https://map.feedingamerica.org/](https://map.feedingamerica.org/)")
+    st.write(
+        """
+        This dataset provides county level data about child food insecurity across Georgia. 
+        The main fields used in this project include Child Food Insecurity Rate, number of food insecure children, 
+        and the percentage of food insecure children in households below and above 185% of the Federal Poverty Level.
+        """
+    )
+
+    st.markdown("---")
+
+    st.markdown("### SAT Scores, Grades and Schools")
+    st.markdown("[https://gosa.georgia.gov/dashboards-data-report-card/downloadable-data](https://gosa.georgia.gov/dashboards-data-report-card/downloadable-data)")
+    st.write(
+        """
+        This dataset provides school level data from Georgia, including school names, addresses, grade levels, 
+        demographics, content mastery scores, free and reduced lunch percentages, and SAT Reading/Writing and Math scores. 
+        It was used to connect school performance and demographic data with county level food insecurity information.
+        """
+    )
+
+    st.markdown("---")
+
+    st.markdown("### Dataset Processing Summary")
+    st.write(
+        f"""
+        The school dataset contains **{len(school_df):,} school records** after removing rows without valid latitude and longitude values. 
+        The Feeding America dataset was cleaned by standardizing county names so it could be merged with the school data. 
+        The final dashboard dataset connects each school to county level food insecurity indicators when a matching county is available.
+        """
+    )
+
+    st.markdown("### Key Columns Used")
+    st.write(
+        """
+        **School data columns:** SCHOOLNAME, STREET, CITY, STATE, ZIP_CODE, GRADES, SINGLESCORE, 
+        PCT_ASIAN, PCT_NATIVE, PCT_BLACK, PCT_HISPANIC, PCT_MULTI, PCT_WHITE, 
+        CONTENT_MASTERYE, CONTENT_MASTERYM, CONTENT_MASTERYH, Percentage of Free & Reduced, 
+        SAT Reading and Writing, SAT Math.
+
+        **Feeding America columns:** Child Food Insecurity Rate, # of Food Insecure Children, 
+        % food insecure children in HH w/ HH incomes below 185 FPL, 
+        % food insecure children in HH w/ HH incomes above 185 FPL.
+        """
+    )
